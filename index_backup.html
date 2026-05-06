@@ -1,0 +1,1435 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>中国居民收入机会不平等再测算——来自机器学习的新发现</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Serif+SC:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    /* ===========================================
+       VIEWPORT FITTING: MANDATORY BASE STYLES
+       =========================================== */
+    html, body {
+        height: 100%;
+        overflow-x: hidden;
+        margin: 0;
+        padding: 0;
+    }
+
+    html {
+        scroll-snap-type: y mandatory;
+        scroll-behavior: smooth;
+    }
+
+    .slide {
+        width: 100vw;
+        height: 100vh;
+        height: 100dvh;
+        overflow: hidden;
+        scroll-snap-align: start;
+        display: flex;
+        flex-direction: column;
+        position: relative;
+    }
+
+    .slide-content {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        max-height: 100%;
+        overflow: hidden;
+        padding: var(--slide-padding);
+    }
+
+    :root {
+        --title-size: clamp(1.5rem, 5vw, 4rem);
+        --h2-size: clamp(1.25rem, 3.5vw, 2.5rem);
+        --h3-size: clamp(1rem, 2.5vw, 1.75rem);
+        --body-size: clamp(0.75rem, 1.5vw, 1.125rem);
+        --small-size: clamp(0.65rem, 1vw, 0.875rem);
+        --slide-padding: clamp(0.75rem, 3vw, 2.5rem);
+        --content-gap: clamp(0.5rem, 2vw, 2rem);
+        --element-gap: clamp(0.25rem, 1vw, 1rem);
+
+        /* Apple Style Colors */
+        --bg-light: #f5f5f7;
+        --bg-card: #ffffff;
+        --text-primary: #1d1d1f;
+        --text-secondary: #86868b;
+        --accent: #0071e3;
+        --accent-secondary: #06c149;
+        --accent-orange: #ff9500;
+        --accent-pink: #ff2d55;
+    }
+
+    body {
+        font-family: 'Inter', 'Noto Serif SC', -apple-system, BlinkMacSystemFont, sans-serif;
+        background: var(--bg-light);
+        color: var(--text-primary);
+    }
+
+    /* ===========================================
+       TYPOGRAPHY
+       =========================================== */
+    .hero-title {
+        font-size: clamp(36px, 8vw, 80px);
+        font-weight: 600;
+        letter-spacing: -0.03em;
+        line-height: 1.05;
+        text-align: center;
+    }
+
+    .section-title {
+        font-size: clamp(24px, 4.5vw, 44px);
+        font-weight: 600;
+        letter-spacing: -0.02em;
+        line-height: 1.15;
+    }
+
+    .h2-title {
+        font-size: clamp(18px, 3vw, 28px);
+        font-weight: 600;
+        letter-spacing: -0.01em;
+        line-height: 1.2;
+    }
+
+    .h3-title {
+        font-size: clamp(14px, 1.8vw, 20px);
+        font-weight: 600;
+        line-height: 1.3;
+    }
+
+    .body-text {
+        font-size: var(--body-size);
+        line-height: 1.6;
+        color: var(--text-secondary);
+    }
+
+    .small-text {
+        font-size: var(--small-size);
+        color: var(--text-secondary);
+    }
+
+    .section-tag {
+        font-size: 11px;
+        font-weight: 600;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--accent);
+        margin-bottom: 8px;
+    }
+
+    .formula {
+        font-family: 'Times New Roman', serif;
+        font-size: clamp(14px, 1.8vw, 20px);
+        background: rgba(0, 113, 227, 0.05);
+        padding: clamp(12px, 2vw, 20px);
+        border-radius: 12px;
+        text-align: center;
+        border: 1px solid rgba(0, 113, 227, 0.1);
+        margin: clamp(12px, 2vw, 24px) 0;
+    }
+
+    .formula-large {
+        font-size: clamp(16px, 2.2vw, 26px);
+    }
+
+    /* ===========================================
+       LAYOUT HELPERS
+       =========================================== */
+    .center-content {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+    }
+
+    .max-width {
+        max-width: min(90vw, 1200px);
+        margin: 0 auto;
+    }
+
+    .max-width-narrow {
+        max-width: min(90vw, 900px);
+        margin: 0 auto;
+    }
+
+    .grid-2 {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: clamp(12px, 2vw, 24px);
+    }
+
+    .grid-3 {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: clamp(12px, 2vw, 24px);
+    }
+
+    .grid-4 {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: clamp(8px, 1.5vw, 16px);
+    }
+
+    @media (max-width: 900px) {
+        .grid-2, .grid-3, .grid-4 {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    /* ===========================================
+       CARDS & CONTAINERS
+       =========================================== */
+    .card {
+        background: var(--bg-card);
+        border-radius: 16px;
+        padding: clamp(16px, 2.5vw, 28px);
+        box-shadow: 0 2px 16px rgba(0, 0, 0, 0.04);
+        overflow: hidden;
+    }
+
+    .card-bordered {
+        border: 1px solid rgba(0, 0, 0, 0.08);
+    }
+
+    /* ===========================================
+       METRICS & DATA
+       =========================================== */
+    .metric-box {
+        text-align: center;
+        padding: clamp(12px, 2vw, 24px);
+    }
+
+    .metric-value {
+        font-size: clamp(32px, 6vw, 56px);
+        font-weight: 700;
+        color: var(--text-primary);
+        line-height: 1;
+    }
+
+    .metric-value.accent { color: var(--accent); }
+    .metric-value.success { color: var(--accent-secondary); }
+    .metric-value.orange { color: var(--accent-orange); }
+    .metric-value.pink { color: var(--accent-pink); }
+
+    .metric-label {
+        font-size: clamp(10px, 1.2vw, 14px);
+        color: var(--text-secondary);
+        margin-top: 8px;
+        font-weight: 400;
+    }
+
+    /* ===========================================
+       DATA TABLE
+       =========================================== */
+    .table-container {
+        overflow-x: auto;
+        margin: clamp(12px, 2vw, 24px) 0;
+    }
+
+    .data-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: var(--small-size);
+    }
+
+    .data-table th {
+        text-align: center;
+        padding: 10px 12px;
+        background: var(--bg-light);
+        font-weight: 600;
+        color: var(--text-primary);
+        border-bottom: 2px solid #e5e5e7;
+    }
+
+    .data-table td {
+        padding: 8px 12px;
+        border-bottom: 1px solid #e5e5e7;
+        color: var(--text-secondary);
+        text-align: center;
+    }
+
+    .data-table tr:last-child td {
+        border-bottom: none;
+    }
+
+    .data-table td:first-child,
+    .data-table th:first-child {
+        text-align: left;
+    }
+
+    /* ===========================================
+       DIVIDER & HIGHLIGHT
+       =========================================== */
+    .divider {
+        width: 50px;
+        height: 3px;
+        background: var(--accent);
+        margin: clamp(12px, 2vw, 20px) auto;
+    }
+
+    .highlight-text {
+        color: var(--accent);
+        font-weight: 600;
+    }
+
+    .highlight-box {
+        background: rgba(0, 113, 227, 0.08);
+        border-left: 4px solid var(--accent);
+        padding: clamp(12px, 2vw, 20px);
+        border-radius: 0 12px 12px 0;
+        margin: clamp(12px, 2vw, 20px) 0;
+    }
+
+    /* ===========================================
+       TIMELINE
+       =========================================== */
+    .timeline {
+        display: flex;
+        flex-direction: column;
+        gap: clamp(12px, 2vw, 20px);
+    }
+
+    .timeline-item {
+        display: flex;
+        align-items: flex-start;
+        gap: clamp(12px, 2vw, 20px);
+    }
+
+    .timeline-dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background: var(--accent);
+        margin-top: 5px;
+        flex-shrink: 0;
+    }
+
+    .timeline-content {
+        flex: 1;
+    }
+
+    /* ===========================================
+       LISTS
+       =========================================== */
+    .feature-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+        display: flex;
+        flex-direction: column;
+        gap: clamp(6px, 1vh, 10px);
+    }
+
+    .feature-list li {
+        font-size: var(--body-size);
+        line-height: 1.5;
+        padding-left: clamp(14px, 2vw, 20px);
+        position: relative;
+        color: var(--text-secondary);
+    }
+
+    .feature-list li::before {
+        content: "";
+        position: absolute;
+        left: 0;
+        top: 7px;
+        width: 5px;
+        height: 5px;
+        border-radius: 50%;
+        background: var(--accent);
+    }
+
+    /* ===========================================
+       CONTRIBUTION CHART
+       =========================================== */
+    .contribution-bar-container {
+        margin-bottom: clamp(8px, 1.5vw, 14px);
+    }
+
+    .contribution-label {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 4px;
+        font-size: var(--small-size);
+    }
+
+    .contribution-bar {
+        height: 24px;
+        background: var(--bg-light);
+        border-radius: 6px;
+        overflow: hidden;
+    }
+
+    .contribution-fill {
+        height: 100%;
+        border-radius: 6px;
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        padding-right: 8px;
+        font-size: 11px;
+        font-weight: 600;
+        color: white;
+    }
+
+    /* ===========================================
+       MODEL BOX
+       =========================================== */
+    .model-box {
+        background: linear-gradient(135deg, rgba(0, 113, 227, 0.03), rgba(6, 193, 73, 0.03));
+        border: 1px solid rgba(0, 113, 227, 0.1);
+        border-radius: 16px;
+        padding: clamp(16px, 2.5vw, 28px);
+        text-align: center;
+    }
+
+    /* ===========================================
+       ANIMATIONS
+       =========================================== */
+    .animate-fade-up {
+        opacity: 0;
+        transform: translateY(20px);
+        transition: opacity 0.5s ease-out, transform 0.5s ease-out;
+    }
+
+    .slide.visible .animate-fade-up {
+        opacity: 1;
+        transform: translateY(0);
+    }
+
+    .delay-1 { transition-delay: 0.1s; }
+    .delay-2 { transition-delay: 0.2s; }
+    .delay-3 { transition-delay: 0.3s; }
+    .delay-4 { transition-delay: 0.4s; }
+    .delay-5 { transition-delay: 0.5s; }
+
+    /* ===========================================
+       NAVIGATION DOTS
+       =========================================== */
+    .nav-dots {
+        position: fixed;
+        right: 16px;
+        top: 50%;
+        transform: translateY(-50%);
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        z-index: 100;
+    }
+
+    .nav-dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: rgba(0, 0, 0, 0.15);
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    .nav-dot.active {
+        background: var(--accent);
+        transform: scale(1.4);
+    }
+
+    .nav-dot:hover {
+        background: var(--accent);
+    }
+
+    /* ===========================================
+       PAGE INDICATOR
+       =========================================== */
+    .page-indicator {
+        position: fixed;
+        bottom: 16px;
+        left: 50%;
+        transform: translateX(-50%);
+        font-size: 11px;
+        color: var(--text-secondary);
+        background: rgba(255, 255, 255, 0.95);
+        padding: 6px 14px;
+        border-radius: 16px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+        z-index: 100;
+    }
+
+    /* ===========================================
+       RESPONSIVE
+       =========================================== */
+    @media (max-width: 600px) {
+        .grid-2, .grid-3, .grid-4 {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        *, *::before, *::after {
+            animation-duration: 0.01ms !important;
+            transition-duration: 0.2s !important;
+        }
+        html {
+            scroll-behavior: auto;
+        }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ===========================================
+     SLIDE 1: 封面
+     =========================================== -->
+<div class="slide" id="slide-1">
+  <div class="slide-content center-content">
+    <div style="text-align: center; max-width: 900px; margin: 0 auto;">
+      <img src="暨南大学/经济学院院徽.png" alt="暨南大学经济学院" style="width: clamp(80px, 15vw, 140px); height: clamp(80px, 15vw, 140px); object-fit: contain; margin-bottom: clamp(16px, 3vw, 32px);">
+      <p style="font-size: clamp(11px, 1.5vw, 15px); color: var(--text-secondary); letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: clamp(12px, 2vw, 20px);">经济学院 · 课程汇报</p>
+      <h1 style="font-size: clamp(24px, 5vw, 48px); font-weight: 600; letter-spacing: -0.03em; line-height: 1.15; margin: 0 0 clamp(12px, 2vw, 20px) 0;">中国居民收入机会不平等再测算</h1>
+      <div style="width: 50px; height: 3px; background: var(--accent); margin: 0 auto clamp(12px, 2vw, 20px) auto;"></div>
+      <p style="font-size: clamp(14px, 2vw, 22px); color: var(--text-secondary); font-weight: 400; margin-bottom: clamp(8px, 1.5vw, 16px);">——来自机器学习的新发现</p>
+      <p style="font-size: clamp(12px, 1.5vw, 16px); color: var(--text-secondary); margin-bottom: clamp(24px, 4vw, 48px);">基于CGSS数据的实证研究</p>
+      <div style="display: flex; justify-content: center; gap: clamp(24px, 5vw, 56px); flex-wrap: wrap;">
+        <div>
+          <p style="font-size: clamp(9px, 1vw, 11px); color: var(--text-secondary); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 4px;">汇报人</p>
+          <p style="font-size: clamp(14px, 2vw, 20px); font-weight: 600;">刘明杰</p>
+        </div>
+        <div>
+          <p style="font-size: clamp(9px, 1vw, 11px); color: var(--text-secondary); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 4px;">汇报人</p>
+          <p style="font-size: clamp(14px, 2vw, 20px); font-weight: 600;">高锦生</p>
+        </div>
+        <div>
+          <p style="font-size: clamp(9px, 1vw, 11px); color: var(--text-secondary); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 4px;">汇报人</p>
+          <p style="font-size: clamp(14px, 2vw, 20px); font-weight: 600;">刘畅</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===========================================
+     SLIDE 2: 目录
+     =========================================== -->
+<div class="slide" id="slide-2">
+  <div class="slide-content">
+    <div class="max-width">
+      <p class="section-tag animate-fade-up">目录</p>
+      <h2 class="section-title animate-fade-up delay-1">研究框架</h2>
+      <div class="grid-2" style="margin-top: clamp(24px, 4vw, 48px); gap: clamp(12px, 2vw, 20px);">
+        <a href="#slide-4" class="card card-bordered animate-fade-up delay-2" style="text-decoration: none; color: inherit;">
+          <span class="h3-title" style="color: var(--accent);">01</span>
+          <h3 class="h2-title" style="margin-top: 8px;">研究背景与问题</h3>
+          <p class="body-text" style="margin-top: 8px;">机会不平等的概念与测算意义</p>
+        </a>
+        <a href="#slide-6" class="card card-bordered animate-fade-up delay-3" style="text-decoration: none; color: inherit;">
+          <span class="h3-title" style="color: var(--accent);">02</span>
+          <h3 class="h2-title" style="margin-top: 8px;">理论框架</h3>
+          <p class="body-text" style="margin-top: 8px;">Roemer机会不平等理论与IACE指数</p>
+        </a>
+        <a href="#slide-9" class="card card-bordered animate-fade-up delay-4" style="text-decoration: none; color: inherit;">
+          <span class="h3-title" style="color: var(--accent);">03</span>
+          <h3 class="h2-title" style="margin-top: 8px;">研究方法</h3>
+          <p class="body-text" style="margin-top: 8px;">机器学习模型与SHAP分解</p>
+        </a>
+        <a href="#slide-13" class="card card-bordered animate-fade-up delay-5" style="text-decoration: none; color: inherit;">
+          <span class="h3-title" style="color: var(--accent);">04</span>
+          <h3 class="h2-title" style="margin-top: 8px;">实证结果</h3>
+          <p class="body-text" style="margin-top: 8px;">IACE测算与因素分解</p>
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===========================================
+     SLIDE 3: 引言 - 研究背景
+     =========================================== -->
+<div class="slide" id="slide-3">
+  <div class="slide-content center-content">
+    <div class="max-width-narrow">
+      <p class="section-tag animate-fade-up">引言</p>
+      <h2 class="section-title animate-fade-up delay-1">中国收入不平等的演变</h2>
+      <div class="divider animate-fade-up delay-2"></div>
+      <p class="body-text animate-fade-up delay-3" style="font-size: clamp(13px, 1.6vw, 18px); text-align: left; margin-bottom: clamp(20px, 3vw, 36px);">
+        改革开放以来，中国居民收入差距持续扩大。<span class="highlight-text">基尼系数</span>从1978年的0.30上升至2023年的0.47，超过国际警戒线（0.40）。
+      </p>
+      <div class="grid-4 animate-fade-up delay-4">
+        <div class="metric-box">
+          <div class="metric-value accent">0.47</div>
+          <div class="metric-label">2023年基尼系数</div>
+        </div>
+        <div class="metric-box">
+          <div class="metric-value orange">1:10.2</div>
+          <div class="metric-label">城乡收入比</div>
+        </div>
+        <div class="metric-box">
+          <div class="metric-value pink">40%+</div>
+          <div class="metric-label">机会不平等占比</div>
+        </div>
+        <div class="metric-box">
+          <div class="metric-value">2010-2021</div>
+          <div class="metric-label">研究时间段</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===========================================
+     SLIDE 4: 研究问题
+     =========================================== -->
+<div class="slide" id="slide-4">
+  <div class="slide-content">
+    <div class="max-width">
+      <p class="section-tag animate-fade-up">研究背景</p>
+      <h2 class="section-title animate-fade-up delay-1">核心研究问题</h2>
+      <div class="grid-2 animate-fade-up delay-2" style="margin-top: clamp(24px, 4vw, 48px); gap: clamp(16px, 3vw, 28px);">
+        <div class="card">
+          <h3 class="h3-title" style="color: var(--text-secondary); margin-bottom: 12px;">结果不平等</h3>
+          <p class="body-text">人们最终获得收入的高低</p>
+          <div style="margin-top: 16px; padding: 12px; background: var(--bg-light); border-radius: 8px;">
+            <p class="small-text">例：有人年收入5万，有人年收入50万</p>
+          </div>
+        </div>
+        <div class="card" style="border-left: 4px solid var(--accent);">
+          <h3 class="h3-title" style="color: var(--accent); margin-bottom: 12px;">机会不平等</h3>
+          <p class="body-text">获得收入的机会是否平等</p>
+          <div style="margin-top: 16px; padding: 12px; background: rgba(0, 113, 227, 0.05); border-radius: 8px;">
+            <p class="small-text">例：家庭背景、户籍、性别等因素在多大程度上决定了你的收入？</p>
+          </div>
+        </div>
+      </div>
+      <div class="highlight-box animate-fade-up delay-3" style="margin-top: clamp(20px, 3vw, 36px);">
+        <p class="h3-title" style="margin-bottom: 8px;">核心问题</p>
+        <p class="body-text" style="font-size: clamp(14px, 1.8vw, 18px);">
+          <span class="highlight-text">"寒门难出贵子"</span> —— 家庭背景在多大程度上决定了个人命运？<br>
+          传统参数方法可能低估机会不平等，需要机器学习新方法
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===========================================
+     SLIDE 5: 理论框架 - Roemer理论
+     =========================================== -->
+<div class="slide" id="slide-5">
+  <div class="slide-content">
+    <div class="max-width">
+      <p class="section-tag animate-fade-up">理论框架</p>
+      <h2 class="section-title animate-fade-up delay-1">Roemer的机会不平等理论</h2>
+      <div class="model-box animate-fade-up delay-2" style="margin-top: clamp(24px, 4vw, 40px);">
+        <p class="h3-title" style="margin-bottom: 16px;">收入分解模型</p>
+        <div class="formula formula-large">
+          Y = f(Circumstances) + g(Effort)
+        </div>
+        <p class="body-text" style="margin-top: 16px;">
+          <span class="highlight-text">Circumstances（环境因素）</span>：个人无法选择的因素<br>
+          <span style="color: var(--accent-secondary);">Effort（努力因素）</span>：个人可以控制的因素
+        </p>
+      </div>
+      <div class="grid-2 animate-fade-up delay-3" style="margin-top: clamp(20px, 3vw, 32px); gap: clamp(12px, 2vw, 20px);">
+        <div class="card" style="background: rgba(0, 113, 227, 0.03);">
+          <h3 class="h3-title" style="color: var(--accent); margin-bottom: 12px;">Circumstances 环境因素</h3>
+          <ul class="feature-list">
+            <li>父亲教育年限</li>
+            <li>母亲教育年限</li>
+            <li>家庭人均收入（对数）</li>
+            <li>户籍类型（城市/农村）</li>
+            <li>地区（东部/中部/西部）</li>
+            <li>性别</li>
+          </ul>
+        </div>
+        <div class="card" style="background: rgba(6, 193, 73, 0.03);">
+          <h3 class="h3-title" style="color: var(--accent-secondary); margin-bottom: 12px;">Effort 努力因素</h3>
+          <ul class="feature-list">
+            <li>个人教育投资</li>
+            <li>工作努力程度</li>
+            <li>职业选择</li>
+            <li>风险承担意愿</li>
+            <li>时间分配</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===========================================
+     SLIDE 6: IACE指数定义
+     =========================================== -->
+<div class="slide" id="slide-6">
+  <div class="slide-content center-content">
+    <div class="max-width-narrow">
+      <p class="section-tag animate-fade-up">理论框架</p>
+      <h2 class="section-title animate-fade-up delay-1">IACE指数定义</h2>
+      <div class="divider animate-fade-up delay-2"></div>
+      <div class="model-box animate-fade-up delay-3" style="margin-top: clamp(24px, 4vw, 48px);">
+        <p class="h3-title" style="margin-bottom: 16px;">IACE（Inequality of Opportunity Index）</p>
+        <div class="formula formula-large">
+          IACE = I(Y<sub>C</sub>) / I(Y)
+        </div>
+        <p class="body-text" style="margin-top: 16px;">
+          其中 Y<sub>C</sub> = f(Circumstances) 为由环境因素预测的收入
+        </p>
+      </div>
+      <div class="grid-2 animate-fade-up delay-4" style="margin-top: clamp(20px, 3vw, 32px); gap: clamp(12px, 2vw, 20px);">
+        <div class="card">
+          <h3 class="h3-title" style="margin-bottom: 12px;">取值范围</h3>
+          <p class="body-text"><strong>0</strong> = 完全机会平等</p>
+          <p class="body-text" style="margin-top: 8px;"><strong>1</strong> = 完全机会不平等</p>
+        </div>
+        <div class="card">
+          <h3 class="h3-title" style="margin-bottom: 12px;">不平等指标</h3>
+          <p class="body-text"><span class="highlight-text">Gini系数</span> 和 <span class="highlight-text">MLD</span></p>
+          <p class="small-text" style="margin-top: 8px;">本文主要采用Gini系数</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===========================================
+     SLIDE 7: 研究方法概述
+     =========================================== -->
+<div class="slide" id="slide-7">
+  <div class="slide-content">
+    <div class="max-width">
+      <p class="section-tag animate-fade-up">研究方法</p>
+      <h2 class="section-title animate-fade-up delay-1">传统方法的局限与机器学习优势</h2>
+      <div class="grid-2 animate-fade-up delay-2" style="margin-top: clamp(24px, 4vw, 40px); gap: clamp(12px, 2vw, 20px);">
+        <div class="card" style="border-left: 4px solid var(--accent-orange);">
+          <h3 class="h3-title" style="color: var(--accent-orange); margin-bottom: 12px;">传统参数方法问题</h3>
+          <ul class="feature-list">
+            <li>假设收入函数形式（明瑟方程）</li>
+            <li>难以捕捉非线性关系</li>
+            <li>环境变量选择主观</li>
+            <li>无法处理高维数据</li>
+            <li>函数形式简化容易低估不平等</li>
+          </ul>
+        </div>
+        <div class="card" style="border-left: 4px solid var(--accent);">
+          <h3 class="h3-title" style="color: var(--accent); margin-bottom: 12px;">机器学习方法优势</h3>
+          <ul class="feature-list">
+            <li>数据驱动，无须预设函数形式</li>
+            <li>自动捕捉复杂交互效应</li>
+            <li>处理高维和非线性关系</li>
+            <li>提供更稳健的估计</li>
+            <li>算法自行筛选变量</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===========================================
+     SLIDE 8: 数据来源
+     =========================================== -->
+<div class="slide" id="slide-8">
+  <div class="slide-content">
+    <div class="max-width">
+      <p class="section-tag animate-fade-up">研究方法</p>
+      <h2 class="section-title animate-fade-up delay-1">数据来源与样本</h2>
+      <div class="card animate-fade-up delay-2" style="margin-top: clamp(24px, 4vw, 40px);">
+        <h3 class="h3-title" style="margin-bottom: 12px;">CGSS（中国综合社会调查）</h3>
+        <p class="body-text">数据来源：中国人民大学中国调查与数据中心</p>
+        <div class="divider" style="width: 30px; margin: 16px auto;"></div>
+        <div class="grid-4" style="gap: clamp(8px, 1.5vw, 16px);">
+          <div class="metric-box">
+            <div class="metric-value accent">2010</div>
+            <div class="metric-label">起始年份</div>
+          </div>
+          <div class="metric-box">
+            <div class="metric-value">2021</div>
+            <div class="metric-label">截止年份</div>
+          </div>
+          <div class="metric-box">
+            <div class="metric-value success">~12万</div>
+            <div class="metric-label">总样本量</div>
+          </div>
+          <div class="metric-box">
+            <div class="metric-value orange">31省</div>
+            <div class="metric-label">覆盖范围</div>
+          </div>
+        </div>
+      </div>
+      <div class="grid-2 animate-fade-up delay-3" style="margin-top: clamp(16px, 2.5vw, 28px); gap: clamp(12px, 2vw, 20px);">
+        <div class="card">
+          <h3 class="h3-title" style="margin-bottom: 8px;">样本构成</h3>
+          <ul class="feature-list" style="font-size: var(--small-size);">
+            <li>城镇住户：约7万户</li>
+            <li>农村住户：约5万户</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3 class="h3-title" style="margin-bottom: 8px;">收入变量</h3>
+          <ul class="feature-list" style="font-size: var(--small-size);">
+            <li>年总收入（对数化处理）</li>
+            <li>分城镇/农村/全样本分析</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===========================================
+     SLIDE 9: 机器学习模型
+     =========================================== -->
+<div class="slide" id="slide-9">
+  <div class="slide-content">
+    <div class="max-width">
+      <p class="section-tag animate-fade-up">研究方法</p>
+      <h2 class="section-title animate-fade-up delay-1">机器学习预测模型</h2>
+      <div class="grid-3 animate-fade-up delay-2" style="margin-top: clamp(24px, 4vw, 40px); gap: clamp(12px, 2vw, 20px);">
+        <div class="card">
+          <h3 class="h3-title" style="color: var(--accent);">XGBoost</h3>
+          <p class="small-text" style="margin: 8px 0;">梯度提升决策树</p>
+          <ul class="feature-list" style="font-size: var(--small-size);">
+            <li>高预测精度</li>
+            <li>处理缺失值</li>
+            <li>正则化防过拟合</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3 class="h3-title" style="color: var(--accent);">RGF</h3>
+          <p class="small-text" style="margin: 8px 0;">广义随机森林</p>
+          <ul class="feature-list" style="font-size: var(--small-size);">
+            <li>因果推断友好</li>
+            <li>置信区间估计</li>
+            <li>处理异质性</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3 class="h3-title" style="color: var(--accent);">随机森林</h3>
+          <p class="small-text" style="margin: 8px 0;">集成学习方法</p>
+          <ul class="feature-list" style="font-size: var(--small-size);">
+            <li>稳健性强</li>
+            <li>特征重要性排序</li>
+            <li>不易过拟合</li>
+          </ul>
+        </div>
+      </div>
+      <div class="highlight-box animate-fade-up delay-3" style="margin-top: clamp(16px, 2.5vw, 28px);">
+        <p class="h3-title" style="margin-bottom: 8px;">模型选择依据</p>
+        <p class="body-text" style="font-size: var(--small-size);">
+          非线性集成树模型能够自动捕捉环境因素之间的复杂交互效应，避免传统线性模型因函数形式假设错误导致的估计偏误
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===========================================
+     SLIDE 10: SHAP分解方法
+     =========================================== -->
+<div class="slide" id="slide-10">
+  <div class="slide-content center-content">
+    <div class="max-width-narrow">
+      <p class="section-tag animate-fade-up">研究方法</p>
+      <h2 class="section-title animate-fade-up delay-1">SHAP因素分解</h2>
+      <div class="divider animate-fade-up delay-2"></div>
+      <div class="model-box animate-fade-up delay-3" style="margin-top: clamp(24px, 4vw, 40px);">
+        <p class="h3-title" style="margin-bottom: 12px;">SHAP（Shapley Additive Explanations）</p>
+        <p class="body-text" style="text-align: left; margin-bottom: 16px;">
+          基于博弈论的合作博弈分配方法，将IACE指数分解到各个环境因素
+        </p>
+        <div class="formula">
+          每个因素的贡献度 = 该因素对预测收入的边际影响
+        </div>
+      </div>
+      <div class="grid-2 animate-fade-up delay-4" style="margin-top: clamp(16px, 2.5vw, 28px); gap: clamp(12px, 2vw, 20px);">
+        <div class="card">
+          <h3 class="h3-title" style="margin-bottom: 8px;">分解步骤</h3>
+          <ol style="padding-left: 16px; font-size: var(--small-size); color: var(--text-secondary);">
+            <li>计算总体不平等Gini</li>
+            <li>计算个体不平等贡献度</li>
+            <li>使用SHAP获得因素贡献度</li>
+            <li>剔除特定因素后重新计算</li>
+            <li>比较Gini变动</li>
+          </ol>
+        </div>
+        <div class="card">
+          <h3 class="h3-title" style="margin-bottom: 8px;">因素分类</h3>
+          <ul class="feature-list" style="font-size: var(--small-size);">
+            <li><strong>个体特征：</strong>性别、年龄、民族等</li>
+            <li><strong>父亲特征：</strong>教育、收入、职业等</li>
+            <li><strong>母亲特征：</strong>教育、收入、职业等</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===========================================
+     SLIDE 11: IACE总体结果
+     =========================================== -->
+<div class="slide" id="slide-11">
+  <div class="slide-content center-content">
+    <div class="max-width-narrow">
+      <p class="section-tag animate-fade-up">实证结果</p>
+      <h2 class="section-title animate-fade-up delay-1">IACE指数测算结果</h2>
+      <div class="divider animate-fade-up delay-2"></div>
+      <div class="card animate-fade-up delay-3" style="margin-top: clamp(24px, 4vw, 48px); text-align: center;">
+        <div class="metric-value accent" style="font-size: clamp(48px, 10vw, 96px);">0.244~0.307</div>
+        <div class="metric-label" style="font-size: clamp(14px, 1.8vw, 20px); margin-top: 12px;">Gini测算的IACE指数（2010-2021）</div>
+      </div>
+      <div class="grid-3 animate-fade-up delay-4" style="margin-top: clamp(20px, 3vw, 32px); gap: clamp(8px, 1.5vw, 16px);">
+        <div class="card">
+          <div class="metric-value" style="font-size: clamp(28px, 5vw, 44px);">38.1%</div>
+          <div class="metric-label">最低占比</div>
+        </div>
+        <div class="card">
+          <div class="metric-value accent" style="font-size: clamp(28px, 5vw, 44px);">45.2%</div>
+          <div class="metric-label">平均占比</div>
+        </div>
+        <div class="card">
+          <div class="metric-value orange" style="font-size: clamp(28px, 5vw, 44px);">52.4%</div>
+          <div class="metric-label">最高占比</div>
+        </div>
+      </div>
+      <div class="highlight-box animate-fade-up delay-5" style="margin-top: clamp(16px, 2.5vw, 28px); text-align: left;">
+        <p class="body-text" style="font-size: clamp(12px, 1.5vw, 16px);">
+          <span class="highlight-text">解读：</span>中国居民收入差距中，约<span class="highlight-text">38%~52%</span>可以归因于个人无法选择的环境因素，明显高于传统参数方法的测算结果
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===========================================
+     SLIDE 12: 城乡差异结果
+     =========================================== -->
+<div class="slide" id="slide-12">
+  <div class="slide-content">
+    <div class="max-width">
+      <p class="section-tag animate-fade-up">实证结果</p>
+      <h2 class="section-title animate-fade-up delay-1">城乡IACE对比</h2>
+      <div class="table-container animate-fade-up delay-2" style="margin-top: clamp(24px, 4vw, 40px);">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>指标</th>
+              <th>全样本</th>
+              <th>城镇</th>
+              <th>农村</th>
+              <th>城乡间</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>IACE范围</td>
+              <td>0.244~0.307</td>
+              <td>0.200~0.267</td>
+              <td>0.196~0.263</td>
+              <td>0.130~0.181</td>
+            </tr>
+            <tr>
+              <td>贡献占比</td>
+              <td>38.1%~52.4%</td>
+              <td>35.9%~54.0%</td>
+              <td>30.2%~40.8%</td>
+              <td>40.1%~57.0%</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="grid-2 animate-fade-up delay-3" style="margin-top: clamp(20px, 3vw, 32px); gap: clamp(12px, 2vw, 20px);">
+        <div class="card">
+          <h3 class="h3-title" style="color: var(--accent); margin-bottom: 8px;">城镇 vs 农村</h3>
+          <p class="body-text" style="font-size: var(--small-size);">城镇IACE绝对量值高于农村，但贡献占比显示农村内部不平等更受环境因素影响</p>
+        </div>
+        <div class="card">
+          <h3 class="h3-title" style="color: var(--accent-orange); margin-bottom: 8px;">关键发现</h3>
+          <p class="body-text" style="font-size: var(--small-size);">城乡间机会不平等占比超过50%，说明环境因素是导致城乡收入差距的重要原因</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===========================================
+     SLIDE 13: 因素分解结果
+     =========================================== -->
+<div class="slide" id="slide-13">
+  <div class="slide-content">
+    <div class="max-width">
+      <p class="section-tag animate-fade-up">实证结果</p>
+      <h2 class="section-title animate-fade-up delay-1">环境因素贡献度分解</h2>
+      <div class="card animate-fade-up delay-2" style="margin-top: clamp(24px, 4vw, 40px);">
+        <p class="h3-title" style="margin-bottom: 16px;">各因素对IACE的贡献方向</p>
+        <div class="contribution-bar-container">
+          <div class="contribution-label">
+            <span style="font-size: var(--small-size);">个体特征（性别、年龄等）</span>
+            <span style="font-size: var(--small-size); color: var(--accent-orange);">拉大不平等 ↓</span>
+          </div>
+          <div class="contribution-bar">
+            <div class="contribution-fill" style="width: 75%; background: var(--accent-orange);">主要因素</div>
+          </div>
+        </div>
+        <div class="contribution-bar-container">
+          <div class="contribution-label">
+            <span style="font-size: var(--small-size);">父亲特征（教育、收入、职业）</span>
+            <span style="font-size: var(--small-size); color: var(--accent-orange);">拉大不平等 ↓</span>
+          </div>
+          <div class="contribution-bar">
+            <div class="contribution-fill" style="width: 80%; background: var(--accent-orange);">最强因素</div>
+          </div>
+        </div>
+        <div class="contribution-bar-container">
+          <div class="contribution-label">
+            <span style="font-size: var(--small-size);">母亲特征（教育、收入、职业）</span>
+            <span style="font-size: var(--small-size); color: var(--accent-secondary);">缩小不平等 ↑</span>
+          </div>
+          <div class="contribution-bar">
+            <div class="contribution-fill" style="width: 40%; background: var(--accent-secondary);">缓解作用</div>
+          </div>
+        </div>
+      </div>
+      <div class="highlight-box animate-fade-up delay-3" style="margin-top: clamp(16px, 2.5vw, 24px);">
+        <p class="body-text" style="font-size: var(--small-size);">
+          <span class="highlight-text">机制解释：</span>父亲收入每增加1%，子女收入增加约0.4-0.5%。母亲特征显示相反影响，可能因为母亲教育投资倾向于降低兄弟姐妹间的教育资源竞争
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===========================================
+     SLIDE 14: 时间趋势
+     =========================================== -->
+<div class="slide" id="slide-14">
+  <div class="slide-content">
+    <div class="max-width">
+      <p class="section-tag animate-fade-up">实证结果</p>
+      <h2 class="section-title animate-fade-up delay-1">IACE演变趋势（2010-2021）</h2>
+      <div class="grid-2 animate-fade-up delay-2" style="margin-top: clamp(24px, 4vw, 40px); gap: clamp(12px, 2vw, 20px);">
+        <div class="card">
+          <h3 class="h3-title" style="color: var(--accent); margin-bottom: 12px;">绝对量演变</h3>
+          <p class="body-text" style="font-size: var(--small-size); margin-bottom: 12px;">呈<span class="highlight-text">"V"型</span>特征</p>
+          <div style="padding: 8px 12px; background: var(--bg-light); border-radius: 8px; font-size: var(--small-size);">
+            <p>2009-2014年：下降</p>
+            <p>2014-2021年：上升</p>
+          </div>
+        </div>
+        <div class="card">
+          <h3 class="h3-title" style="color: var(--accent-secondary); margin-bottom: 12px;">占比演变</h3>
+          <p class="body-text" style="font-size: var(--small-size); margin-bottom: 12px;">呈<span class="highlight-text">"N"型</span>特征</p>
+          <div style="padding: 8px 12px; background: rgba(6, 193, 73, 0.05); border-radius: 8px; font-size: var(--small-size);">
+            <p>2009-2012年：上升</p>
+            <p>2012-2014年：下降</p>
+            <p>2014-2021年：上升</p>
+          </div>
+        </div>
+      </div>
+      <div class="card animate-fade-up delay-3" style="margin-top: clamp(16px, 2.5vw, 24px);">
+        <h3 class="h3-title" style="margin-bottom: 12px;">关键发现</h3>
+        <ul class="feature-list" style="font-size: var(--small-size);">
+          <li>样本期内IACE普遍上升，<span class="highlight-text">机会不平等处于反弹态势</span></li>
+          <li>农村样本增幅最大（约26%）</li>
+          <li>环境因素影响根深蒂固，难以通过经济社会自发调节在短期内消除</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===========================================
+     SLIDE 15: 分布不平等
+     =========================================== -->
+<div class="slide" id="slide-15">
+  <div class="slide-content center-content">
+    <div class="max-width-narrow">
+      <p class="section-tag animate-fade-up">实证结果</p>
+      <h2 class="section-title animate-fade-up delay-1">收入分布机会不平等</h2>
+      <div class="divider animate-fade-up delay-2"></div>
+      <p class="body-text animate-fade-up delay-3" style="font-size: clamp(12px, 1.5vw, 16px); margin: clamp(16px, 2.5vw, 28px) 0; text-align: left;">
+        传统研究仅关注收入均值的机会不平等，本文拓展到<span class="highlight-text">收入分布</span>层面
+      </p>
+      <div class="grid-4 animate-fade-up delay-4" style="gap: clamp(8px, 1.5vw, 14px);">
+        <div class="card">
+          <h3 class="h3-title" style="color: var(--accent); font-size: clamp(12px, 1.5vw, 16px);">收入下限</h3>
+          <p class="small-text" style="margin-top: 8px;">10%分位数</p>
+          <p class="small-text" style="margin-top: 4px; color: var(--accent-orange);">不平等最严重</p>
+        </div>
+        <div class="card">
+          <h3 class="h3-title" style="color: var(--accent); font-size: clamp(12px, 1.5vw, 16px);">收入上限</h3>
+          <p class="small-text" style="margin-top: 8px;">90%分位数</p>
+          <p class="small-text" style="margin-top: 4px;">增长空间</p>
+        </div>
+        <div class="card">
+          <h3 class="h3-title" style="color: var(--accent); font-size: clamp(12px, 1.5vw, 16px);">偶然收入</h3>
+          <p class="small-text" style="margin-top: 8px;">50%分位数</p>
+          <p class="small-text" style="margin-top: 4px;">中等水平</p>
+        </div>
+        <div class="card">
+          <h3 class="h3-title" style="color: var(--accent); font-size: clamp(12px, 1.5vw, 16px);">收入风险</h3>
+          <p class="small-text" style="margin-top: 8px;">标准差</p>
+          <p class="small-text" style="margin-top: 4px; color: var(--accent-pink);">波动最大</p>
+        </div>
+      </div>
+      <div class="highlight-box animate-fade-up delay-5" style="margin-top: clamp(16px, 2.5vw, 24px); text-align: left;">
+        <p class="body-text" style="font-size: var(--small-size);">
+          <span class="highlight-text">核心发现：</span>分布不平等明显高于均值不平等，收入风险Gini约为收入均值的<span class="highlight-text">1.93倍</span>
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===========================================
+     SLIDE 16: 方法对比
+     =========================================== -->
+<div class="slide" id="slide-16">
+  <div class="slide-content">
+    <div class="max-width">
+      <p class="section-tag animate-fade-up">实证结果</p>
+      <h2 class="section-title animate-fade-up delay-1">与传统研究的对比</h2>
+      <div class="table-container animate-fade-up delay-2" style="margin-top: clamp(24px, 4vw, 40px);">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>样本</th>
+              <th>传统参数方法</th>
+              <th>本文ML方法</th>
+              <th>差异</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>全样本</td>
+              <td>24-36%</td>
+              <td>38-52%</td>
+              <td style="color: var(--accent-orange);">+12~16%</td>
+            </tr>
+            <tr>
+              <td>城镇</td>
+              <td>22-30%</td>
+              <td>36-54%</td>
+              <td style="color: var(--accent-orange);">+14~24%</td>
+            </tr>
+            <tr>
+              <td>农村</td>
+              <td>25-37%</td>
+              <td>30-41%</td>
+              <td style="color: var(--accent-orange);">+5~4%</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="highlight-box animate-fade-up delay-3" style="margin-top: clamp(16px, 2.5vw, 24px);">
+        <p class="h3-title" style="margin-bottom: 8px;">结论</p>
+        <p class="body-text" style="font-size: var(--small-size);">
+          机器学习方法测算结果<span class="highlight-text">明显高于</span>传统参数方法，证实了"函数形式简化容易低估机会不平等"的理论推断<br>
+          <span class="highlight-text">原因：</span>除非引入大量交互项和高阶项，否则线性模型容易将环境因素影响遗漏在随机扰动项中
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===========================================
+     SLIDE 17: 研究结论
+     =========================================== -->
+<div class="slide" id="slide-17">
+  <div class="slide-content">
+    <div class="max-width">
+      <p class="section-tag animate-fade-up">研究结论</p>
+      <h2 class="section-title animate-fade-up delay-1">核心发现</h2>
+      <div class="grid-2 animate-fade-up delay-2" style="margin-top: clamp(24px, 4vw, 40px); gap: clamp(12px, 2vw, 20px);">
+        <div class="card" style="border-top: 4px solid var(--accent);">
+          <span class="h3-title" style="color: var(--accent);">结论一</span>
+          <p class="body-text" style="margin-top: 12px; font-size: var(--small-size);">
+            IACE指数为<span class="highlight-text">0.244~0.307</span>，贡献总体不平等的<span class="highlight-text">38%~52%</span>，明显高于传统方法
+          </p>
+        </div>
+        <div class="card" style="border-top: 4px solid var(--accent-secondary);">
+          <span class="h3-title" style="color: var(--accent-secondary);">结论二</span>
+          <p class="body-text" style="margin-top: 12px; font-size: var(--small-size);">
+            <span class="highlight-text">城乡间</span>机会不平等占比最高（40%-57%），户籍制度是最大来源
+          </p>
+        </div>
+        <div class="card" style="border-top: 4px solid var(--accent-orange);">
+          <span class="h3-title" style="color: var(--accent-orange);">结论三</span>
+          <p class="body-text" style="margin-top: 12px; font-size: var(--small-size);">
+            父亲特征持续<span class="highlight-text">拉大</span>收入差距，母亲特征<span class="highlight-text">缓解</span>不平等
+          </p>
+        </div>
+        <div class="card" style="border-top: 4px solid var(--accent-pink);">
+          <span class="h3-title" style="color: var(--accent-pink);">结论四</span>
+          <p class="body-text" style="margin-top: 12px; font-size: var(--small-size);">
+            分布不平等<span class="highlight-text">远高于</span>均值不平等，收入风险不平等约为均值的2倍
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===========================================
+     SLIDE 18: 政策建议
+     =========================================== -->
+<div class="slide" id="slide-18">
+  <div class="slide-content">
+    <div class="max-width">
+      <p class="section-tag animate-fade-up">政策建议</p>
+      <h2 class="section-title animate-fade-up delay-1">缩小机会不平等的政策路径</h2>
+      <div class="grid-2 animate-fade-up delay-2" style="margin-top: clamp(24px, 4vw, 40px); gap: clamp(12px, 2vw, 20px);">
+        <div class="card">
+          <h3 class="h3-title" style="color: var(--accent);">前端治理</h3>
+          <ul class="feature-list" style="margin-top: 12px;">
+            <li>推动城乡公共服务均等化</li>
+            <li>加大农村教育投入</li>
+            <li>缩小城乡师资差距</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3 class="h3-title" style="color: var(--accent-secondary);">反歧视政策</h3>
+          <ul class="feature-list" style="margin-top: 12px;">
+            <li>消除就业性别歧视</li>
+            <li>保障女性职场权益</li>
+            <li>建立反歧视法律体系</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3 class="h3-title" style="color: var(--accent-orange);">监测体系</h3>
+          <ul class="feature-list" style="margin-top: 12px;">
+            <li>将分布不平等纳入统计监测</li>
+            <li>关注收入风险和增长空间</li>
+            <li>建立大数据监测平台</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3 class="h3-title" style="color: var(--accent-pink);">预期管理</h3>
+          <ul class="feature-list" style="margin-top: 12px;">
+            <li>建立收入分配预警系统</li>
+            <li>针对性治理干预</li>
+            <li>消除长期负面情绪</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===========================================
+     SLIDE 19: 研究创新
+     =========================================== -->
+<div class="slide" id="slide-19">
+  <div class="slide-content">
+    <div class="max-width">
+      <p class="section-tag animate-fade-up">研究贡献</p>
+      <h2 class="section-title animate-fade-up delay-1">本文创新点</h2>
+      <div class="grid-2 animate-fade-up delay-2" style="margin-top: clamp(24px, 4vw, 40px); gap: clamp(16px, 3vw, 28px);">
+        <div class="card" style="border-left: 4px solid var(--accent);">
+          <h3 class="h3-title" style="color: var(--accent); margin-bottom: 12px;">方法创新</h3>
+          <ul class="feature-list">
+            <li>首次将机器学习应用于中国IACE测算</li>
+            <li>突破传统线性模型的函数形式假设</li>
+            <li>使用SHAP方法实现非线性分解</li>
+            <li>提供更准确的估计结果</li>
+          </ul>
+        </div>
+        <div class="card" style="border-left: 4px solid var(--accent-secondary);">
+          <h3 class="h3-title" style="color: var(--accent-secondary); margin-bottom: 12px;">内容创新</h3>
+          <ul class="feature-list">
+            <li>从均值不平等拓展到分布不平等</li>
+            <li>引入分位数回归森林方法</li>
+            <li>揭示收入风险差距的重要性</li>
+            <li>丰富机会不平等的外延</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===========================================
+     SLIDE 20: 研究局限与展望
+     =========================================== -->
+<div class="slide" id="slide-20">
+  <div class="slide-content">
+    <div class="max-width">
+      <p class="section-tag animate-fade-up">研究展望</p>
+      <h2 class="section-title animate-fade-up delay-1">局限与未来方向</h2>
+      <div class="grid-2 animate-fade-up delay-2" style="margin-top: clamp(24px, 4vw, 40px); gap: clamp(12px, 2vw, 20px);">
+        <div class="card">
+          <h3 class="h3-title" style="margin-bottom: 12px;">研究局限</h3>
+          <ul class="feature-list" style="font-size: var(--small-size);">
+            <li>Circumstance变量选择仍有主观性</li>
+            <li>Effort变量难以精确测量</li>
+            <li>CGSS调查间隔较长（5年）</li>
+            <li>因果推断存在挑战</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3 class="h3-title" style="margin-bottom: 12px;">未来方向</h3>
+          <ul class="feature-list" style="font-size: var(--small-size);">
+            <li>追踪研究：代际流动性变化</li>
+            <li>国际比较研究</li>
+            <li>政策评估：改革效果检验</li>
+            <li>微观数据监测系统建设</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===========================================
+     SLIDE 21: 参考文献
+     =========================================== -->
+<div class="slide" id="slide-21">
+  <div class="slide-content">
+    <div class="max-width">
+      <p class="section-tag animate-fade-up">参考文献</p>
+      <h2 class="section-title animate-fade-up delay-1">主要文献</h2>
+      <div class="card animate-fade-up delay-2" style="margin-top: clamp(24px, 4vw, 40px); max-height: none; overflow-y: auto;">
+        <ul class="feature-list" style="font-size: clamp(10px, 1.2vw, 13px);">
+          <li>Roemer, J. E. (1998). <em>Equality of Opportunity</em>. Harvard University Press.</li>
+          <li style="margin-top: 12px;">Brunori, P., Hufe, P., & Mahler, D. G. (2018). The Roots of Inequality: Estimating Inequality of Opportunity from Regression Trees. <em>World Bank Policy Research Working Paper</em>, No. 8349.</li>
+          <li style="margin-top: 12px;">李实, 沈扬扬. (2022). 中国农村居民收入分配中的机会不平等. <em>农业经济问题</em>.</li>
+          <li style="margin-top: 12px;">汪晨, 张彤进, 万广华. (2020). 中国收入差距中的机会不均等. <em>财贸经济</em>, 41(4), 66-81.</li>
+          <li style="margin-top: 12px;">Callaway, B., & Huang, W. (2020). Distributional Effects of a Continuous Treatment. <em>Oxford Bulletin of Economics and Statistics</em>, 82(4), 808-842.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===========================================
+     SLIDE 22: 感谢
+     =========================================== -->
+<div class="slide" id="slide-22">
+  <div class="slide-content center-content">
+    <div class="max-width">
+      <h1 class="hero-title animate-fade-up">感谢聆听</h1>
+      <div class="divider animate-fade-up delay-2"></div>
+      <p class="h3-title animate-fade-up delay-3" style="color: var(--text-secondary); font-weight: 400; margin-top: 20px;">
+        欢迎提问与讨论
+      </p>
+      <div class="animate-fade-up delay-4" style="margin-top: 48px;">
+        <p class="small-text">经济学院 · 课程汇报</p>
+        <p class="small-text" style="margin-top: 8px; color: var(--text-secondary);">
+          中国居民收入机会不平等再测算
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===========================================
+     NAVIGATION DOTS
+     =========================================== -->
+<div class="nav-dots" id="navDots"></div>
+
+<!-- ===========================================
+     PAGE INDICATOR
+     =========================================== -->
+<div class="page-indicator">
+  <span id="currentPage">1</span> / <span id="totalPages">22</span>
+</div>
+
+<script>
+  const slides = document.querySelectorAll('.slide');
+  const totalSlides = slides.length;
+  const navDots = document.getElementById('navDots');
+  const currentPageEl = document.getElementById('currentPage');
+  const totalPagesEl = document.getElementById('totalPages');
+
+  totalPagesEl.textContent = totalSlides;
+  slides.forEach((_, i) => {
+    const dot = document.createElement('div');
+    dot.className = 'nav-dot' + (i === 0 ? ' active' : '');
+    dot.addEventListener('click', () => goToSlide(i + 1));
+    navDots.appendChild(dot);
+  });
+
+  let currentSlide = 1;
+
+  function goToSlide(n) {
+    if (n < 1 || n > totalSlides) return;
+    currentSlide = n;
+    slides[n - 1].scrollIntoView({ behavior: 'smooth' });
+    updateNav();
+  }
+
+  function updateNav() {
+    document.querySelectorAll('.nav-dot').forEach((dot, i) => {
+      dot.classList.toggle('active', i === currentSlide - 1);
+    });
+    currentPageEl.textContent = currentSlide;
+  }
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowDown' || e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown') {
+      e.preventDefault();
+      goToSlide(currentSlide + 1);
+    } else if (e.key === 'ArrowUp' || e.key === 'ArrowLeft' || e.key === 'PageUp') {
+      e.preventDefault();
+      goToSlide(currentSlide - 1);
+    } else if (e.key === 'Home') {
+      e.preventDefault();
+      goToSlide(1);
+    } else if (e.key === 'End') {
+      e.preventDefault();
+      goToSlide(totalSlides);
+    }
+  });
+
+  let isScrolling = false;
+  window.addEventListener('scroll', () => {
+    if (isScrolling) return;
+    isScrolling = true;
+    requestAnimationFrame(() => {
+      const scrollPos = window.scrollY;
+      const windowHeight = window.innerHeight;
+      const newSlide = Math.round(scrollPos / windowHeight) + 1;
+      if (newSlide !== currentSlide && newSlide >= 1 && newSlide <= totalSlides) {
+        currentSlide = newSlide;
+        updateNav();
+      }
+      isScrolling = false;
+    });
+  });
+
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('visible');
+        const slideIndex = Array.from(slides).indexOf(entry.target) + 1;
+        if (slideIndex !== currentSlide) {
+          currentSlide = slideIndex;
+          updateNav();
+        }
+      }
+    });
+  }, { threshold: 0.5 });
+
+  slides.forEach(slide => observer.observe(slide));
+
+  let touchStartY = 0;
+  document.addEventListener('touchstart', (e) => {
+    touchStartY = e.touches[0].clientY;
+  });
+
+  document.addEventListener('touchend', (e) => {
+    const touchEndY = e.changedTouches[0].clientY;
+    const diff = touchStartY - touchEndY;
+    if (Math.abs(diff) > 50) {
+      if (diff > 0) {
+        goToSlide(currentSlide + 1);
+      } else {
+        goToSlide(currentSlide - 1);
+      }
+    }
+  });
+</script>
+
+</body>
+</html>
